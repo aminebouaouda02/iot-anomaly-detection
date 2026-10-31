@@ -39,11 +39,40 @@ python -m pytest
 ## Roadmap
 
 - [x] Telemetry generator with labeled anomalies + tests
-- [ ] Baseline detector (rolling z-score) with precision / recall / F1
-- [ ] Isolation Forest detector and head-to-head comparison per anomaly type
+- [x] Baseline detector (rolling z-score) with precision / recall / F1
+- [x] Isolation Forest detector and head-to-head comparison per anomaly type
 - [ ] FastAPI service: score a telemetry window via REST
 - [ ] Dashboard + optional live MQTT mode (Mosquitto, like the SCADA coursework)
 - [ ] CI with GitHub Actions
+
+## Measured results
+
+Chronological split: the model is fitted on the first 3 days only and both
+detectors are scored on the remaining 4 days (5,760 points, 274 labeled
+anomalies). Reproduce with `python -m src.evaluate_detectors`; the full
+output is in `results/metrics.json`.
+
+| Detector | Precision | Recall | F1 |
+|---|---|---|---|
+| Baseline (rolling z-score, window 60 min, threshold 3.5) | 0.490 | 0.091 | 0.154 |
+| Isolation Forest (12 features, contamination 0.04) | 0.234 | 0.339 | 0.277 |
+
+Recall per anomaly type — where each detector is blind:
+
+| Type | Baseline | Isolation Forest |
+|---|---|---|
+| spike | 1.000 | 1.000 |
+| drop | 0.381 | 0.905 |
+| drift | 0.000 | 0.308 |
+| stuck | 0.033 | 0.200 |
+
+Reading: a threshold catches sudden spikes perfectly but is blind to slow
+drift (its rolling mean adapts to the drift) and to stuck sensors (a frozen
+value is never "far" from its mean). The Isolation Forest catches most drops
+and part of the drifts, at the price of many false alarms (precision 0.234).
+Neither is good enough alone on stuck sensors — that is stated openly here
+because it is what the measurements say, and it motivates the feature and
+tuning work in the next modules.
 
 ## Honest limits
 
