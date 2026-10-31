@@ -1,9 +1,32 @@
 # IoT / SCADA Telemetry Anomaly Detection
 
+![CI](https://github.com/aminebouaouda02/iot-anomaly-detection/actions/workflows/ci.yml/badge.svg)
+
 Detecting abnormal sensor behaviour in industrial telemetry with machine
 learning — an extension of my ENSAM SCADA supervision work (Node-RED, MQTT,
 ESP32) into data science: the same kind of temperature / humidity / vibration
 streams, now analysed instead of only displayed.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    GEN["Telemetry generator<br/>(labeled anomalies)"] --> DATA[("data/telemetry.csv")]
+    DATA --> FEAT["Feature engineering<br/>(rolling stats, rates of change)"]
+    FEAT --> BASE["Baseline detector<br/>(rolling z-score)"]
+    FEAT --> ML["Isolation Forest<br/>(trained model)"]
+    BASE --> EVAL["Evaluation<br/>(precision / recall / F1)"]
+    ML --> EVAL
+    ML --> API["FastAPI service<br/>(/health, /model-info, /detect)"]
+    ML --> DASH["Streamlit dashboard"]
+    MQTT["MQTT broker<br/>(factory/telemetry)"] --> LIVE["Live scoring<br/>(rolling buffer)"]
+    LIVE --> ML
+```
+
+Every detector is scored against the same ground-truth labels; the model is
+persisted with joblib and shared by the API, the dashboard and the live MQTT
+scoring. CI (GitHub Actions) runs the full pytest suite on every push and
+pull request.
 
 ## Why labeled synthetic data?
 
@@ -43,7 +66,7 @@ python -m pytest
 - [x] Isolation Forest detector and head-to-head comparison per anomaly type
 - [x] FastAPI service: score a telemetry window via REST
 - [x] Dashboard + optional live MQTT mode (Mosquitto, like the SCADA coursework)
-- [ ] CI with GitHub Actions
+- [x] CI with GitHub Actions
 
 ## API
 
