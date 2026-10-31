@@ -42,7 +42,7 @@ python -m pytest
 - [x] Baseline detector (rolling z-score) with precision / recall / F1
 - [x] Isolation Forest detector and head-to-head comparison per anomaly type
 - [x] FastAPI service: score a telemetry window via REST
-- [ ] Dashboard + optional live MQTT mode (Mosquitto, like the SCADA coursework)
+- [x] Dashboard + optional live MQTT mode (Mosquitto, like the SCADA coursework)
 - [ ] CI with GitHub Actions
 
 ## API
@@ -59,6 +59,32 @@ uvicorn src.api:app --port 8000
   anomaly count. The model is loaded from `models/isolation_forest.joblib`
   when present, otherwise trained on the spot from the committed dataset
   with the same protocol as the evaluation.
+
+## Dashboard
+
+```bash
+streamlit run src/dashboard.py
+```
+
+Pick a day and the sensors to display: the series are plotted with the
+model's predicted anomalies as red dots and (optionally) the ground-truth
+labels as green circles, plus the day's counts and the measured test-period
+metrics. Verified on day 1 of the dataset: 1,411 points scored, 79 predicted
+anomalies against 120 labeled ones.
+
+## Live MQTT mode
+
+The same publish/subscribe pattern as the SCADA coursework: JSON records on
+the topic `factory/telemetry`, scored as they arrive.
+
+```bash
+python -m src.mqtt_live --broker localhost        # subscriber (the detector)
+python -m src.mqtt_simulator --broker localhost   # replays the dataset as a feeder
+```
+
+Verified end to end against a local broker: 120 replayed records produced
+91 scored points (scoring starts once 31 records give the features context),
+and a manually published 45 °C reading was flagged as an anomaly.
 
 ## Measured results
 
