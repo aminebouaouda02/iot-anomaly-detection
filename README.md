@@ -41,9 +41,24 @@ python -m pytest
 - [x] Telemetry generator with labeled anomalies + tests
 - [x] Baseline detector (rolling z-score) with precision / recall / F1
 - [x] Isolation Forest detector and head-to-head comparison per anomaly type
-- [ ] FastAPI service: score a telemetry window via REST
+- [x] FastAPI service: score a telemetry window via REST
 - [ ] Dashboard + optional live MQTT mode (Mosquitto, like the SCADA coursework)
 - [ ] CI with GitHub Actions
+
+## API
+
+```bash
+uvicorn src.api:app --port 8000
+```
+
+- `GET /health` — service and model status.
+- `GET /model-info` — the measured metrics below, served from `results/metrics.json`.
+- `POST /detect` — body: `{"records": [{"timestamp": ..., "temperature": ..., "humidity": ..., "vibration": ...}, ...]}`
+  with at least 31 consecutive minute records (the first 29 are feature
+  context; predictions start at index 29). Returns per-point flags and the
+  anomaly count. The model is loaded from `models/isolation_forest.joblib`
+  when present, otherwise trained on the spot from the committed dataset
+  with the same protocol as the evaluation.
 
 ## Measured results
 
